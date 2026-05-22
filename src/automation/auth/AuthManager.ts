@@ -872,6 +872,39 @@ export class AuthManager {
                 const u = new URL(page.url())
                 const atRewardHome =
                     u.hostname === 'rewards.bing.com' && (u.pathname === '/' || u.pathname === '/dashboard')
+                const atWelcomePage =
+                    u.hostname === 'rewards.bing.com' && (u.pathname.includes('/welcome') || u.pathname.includes('/signup'))
+
+                if (atWelcomePage) {
+                    this.bot.logger.info(this.bot.isMobile, 'GET-REWARD-SESSION', 'Welcome page detected, attempting to onboard account')
+                    try {
+                        const joinSelectors = [
+                            'a[href*="signup"]',
+                            'a:has-text("Join for free")',
+                            'a:has-text("Join now")',
+                            'button:has-text("Join now")',
+                            'a:has-text("Start earning")',
+                            'a.c-call-to-action'
+                        ]
+                        const joinButton = page.locator(joinSelectors.join(', ')).first()
+                        
+                        if (await joinButton.isVisible({ timeout: 3000 })) {
+                            this.bot.logger.info(this.bot.isMobile, 'GET-REWARD-SESSION', 'Found Join/Start button, clicking it...')
+                            await joinButton.click()
+                            await page.waitForLoadState('networkidle', { timeout: 10000 })
+                            await this.bot.utils.wait(3000)
+                            
+                            // If it redirected to the dashboard, skip the rest of the loop to re-evaluate URL
+                            if (page.url().includes('/dashboard') || page.url().endsWith('rewards.bing.com/')) {
+                                continue
+                            }
+                        } else {
+                            this.bot.logger.warn(this.bot.isMobile, 'GET-REWARD-SESSION', 'Could not find a visible Join button')
+                        }
+                    } catch (e) {
+                        this.bot.logger.warn(this.bot.isMobile, 'GET-REWARD-SESSION', 'Error interacting with Welcome page')
+                    }
+                }
 
                 if (atRewardHome) {
                     await this.bot.browser.utils.tryDismissAllMessages(page)
