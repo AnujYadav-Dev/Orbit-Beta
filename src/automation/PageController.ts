@@ -113,16 +113,29 @@ export default class PageController {
 
             try {
                 const unescaped = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\')
-                const jsonMatch = unescaped.match(/\{[^{}]*"userStatus"\s*:\s*\{.*$/s)
-                if (jsonMatch) {
-                    const parsed = JSON.parse(jsonMatch[0])
-                    if (parsed?.userStatus) {
+                const startIndex = unescaped.indexOf('{')
+                if (startIndex !== -1) {
+                    const parsed = JSON.parse(unescaped.substring(startIndex))
+                    
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const findDashboard = (obj: any): any => {
+                        if (!obj || typeof obj !== 'object') return null
+                        if (obj.userStatus) return obj
+                        for (const key of Object.keys(obj)) {
+                            const found = findDashboard(obj[key])
+                            if (found) return found
+                        }
+                        return null
+                    }
+                    
+                    const dashboardData = findDashboard(parsed)
+                    if (dashboardData?.userStatus) {
                         this.bot.logger.debug(
                             this.bot.isMobile,
                             'GET-DASHBOARD-DATA',
                             'Extracted dashboard data from Next.js hydration chunk'
                         )
-                        return parsed as DashboardData
+                        return dashboardData as DashboardData
                     }
                 }
             } catch {
