@@ -11,6 +11,7 @@ import type { Counters, DashboardData } from '../types/DashboardData'
 import type { AppEarnablePoints, BrowserEarnablePoints, MissingSearchPoints } from '../types/Points'
 import type { XboxDashboardData } from '../types/XboxDashboardData'
 import { URLS } from './DashboardSelectors'
+import { classifyRewardsPage, isRewardsAnonymousOrOnboardingPage } from './RewardsAuthState'
 
 export default class PageController {
     private bot: MicrosoftRewardsBot
@@ -96,6 +97,12 @@ export default class PageController {
     }
 
     private parseDashboardHtml(html: string): DashboardData {
+        if (isRewardsAnonymousOrOnboardingPage(html)) {
+            throw new Error(
+                'Rewards dashboard is not authenticated or onboarding is incomplete; Microsoft returned the Rewards welcome/sign-in page'
+            )
+        }
+
         const legacyMatch = html.match(/var\s+dashboard\s*=\s*({.*?});/s)
         if (legacyMatch?.[1]) {
             this.bot.logger.debug(
@@ -435,62 +442,71 @@ export default class PageController {
     async closeBrowser(browser: BrowserContext, email: string) {
         try {
             const cookies = await browser.cookies()
+            const shouldPersistSession = await this.shouldPersistSession(browser)
 
-            // Save cookies
-            this.bot.logger.debug(
-                this.bot.isMobile,
-                'CLOSE-BROWSER',
-                `Saving ${cookies.length} cookies to session folder!`
-            )
-            await saveSessionData(this.bot.config.sessionPath, cookies, email, this.bot.isMobile)
-
-            // Save localStorage from all open pages (rewards.bing.com, bing.com)
-            try {
-                const storageOrigins: StorageOrigin[] = []
-                const pages = browser.pages()
-                const seenOrigins = new Set<string>()
-
-                for (const page of pages) {
-                    try {
-                        const url = new URL(page.url())
-                        const origin = url.origin
-                        if (seenOrigins.has(origin) || origin === 'about:' || origin === 'chrome:') continue
-                        seenOrigins.add(origin)
-
-                        const items: Array<{ name: string; value: string }> = await page
-                            .evaluate(() => {
-                                const result: Array<{ name: string; value: string }> = []
-                                for (let i = 0; i < localStorage.length; i++) {
-                                    const key = localStorage.key(i)
-                                    if (key) {
-                                        result.push({ name: key, value: localStorage.getItem(key) ?? '' })
-                                    }
-                                }
-                                return result
-                            })
-                            .catch(() => [])
-
-                        if (items.length > 0) {
-                            storageOrigins.push({ origin, localStorage: items })
-                        }
-                    } catch {
-                        // Skip pages that can't be accessed
-                    }
-                }
-
-                if (storageOrigins.length > 0) {
-                    await saveStorageState(this.bot.config.sessionPath, storageOrigins, email, this.bot.isMobile)
-                    this.bot.logger.debug(
-                        this.bot.isMobile,
-                        'CLOSE-BROWSER',
-                        `Saved localStorage for ${storageOrigins.length} origin(s)`
-                    )
-                }
-            } catch (storageError) {
+            if (shouldPersistSession) {
+                // Save cookies
                 this.bot.logger.debug(
                     this.bot.isMobile,
                     'CLOSE-BROWSER',
-                    `Could not save localStorage: ${storageError instanceof Error ? storageError.message : String(storageError)}`
+                    `Saving ${cookies.length} cookies to session folder!`
+                )
+                await saveSessionData(this.bot.config.sessionPath, cookies, email, this.bot.isMobile)
+
+                // Save localStorage from all open pages (rewards.bing.com, bing.com)
+                try {
+                    const storageOrigins: StorageOrigin[] = []
+                    const pages = browser.pages()
+                    const seenOrigins = new Set<string>()
+
+                    for (const page of pages) {
+                        try {
+                            const url = new URL(page.url())
+                            const origin = url.origin
+                            if (seenOrigins.has(origin) || origin === 'about:' || origin === 'chrome:') continue
+                            seenOrigins.add(origin)
+
+                            const items: Array<{ name: string; value: string }> = await page
+                                .evaluate(() => {
+                                    const result: Array<{ name: string; value: string }> = []
+                                    for (let i = 0; i < localStorage.length; i++) {
+                                        const key = localStorage.key(i)
+                                        if (key) {
+                                            result.push({ name: key, value: localStorage.getItem(key) ?? '' })
+                                        }
+                                    }
+                                    return result
+                                })
+                                .catch(() => [])
+
+                            if (items.length > 0) {
+                                storageOrigins.push({ origin, localStorage: items })
+                            }
+                        } catch {
+                            // Skip pages that can't be accessed
+                        }
+                    }
+
+                    if (storageOrigins.length > 0) {
+                        await saveStorageState(this.bot.config.sessionPath, storageOrigins, email, this.bot.isMobile)
+                        this.bot.logger.debug(
+                            this.bot.isMobile,
+                            'CLOSE-BROWSER',
+                            `Saved localStorage for ${storageOrigins.length} origin(s)`
+                        )
+                    }
+                } catch (storageError) {
+                    this.bot.logger.debug(
+                        this.bot.isMobile,
+                        'CLOSE-BROWSER',
+                        `Could not save localStorage: ${storageError instanceof Error ? storageError.message : String(storageError)}`
+                    )
+                }
+            } else {
+                this.bot.logger.warn(
+                    this.bot.isMobile,
+                    'CLOSE-BROWSER',
+                    'Skipping session save because Rewards is on the anonymous welcome/sign-in page'
                 )
             }
 
@@ -507,6 +523,27 @@ export default class PageController {
             )
             throw error
         }
+    }
+
+    private async shouldPersistSession(browser: BrowserContext): Promise<boolean> {
+        let sawAnonymousRewards = false
+        let sawAuthenticatedRewards = false
+
+        for (const page of browser.pages()) {
+            try {
+                const url = new URL(page.url())
+                if (url.hostname !== 'rewards.bing.com') continue
+
+                const html = await page.content().catch(() => '')
+                const state = classifyRewardsPage(html, page.url())
+                if (state === 'authenticated-dashboard') sawAuthenticatedRewards = true
+                if (state === 'anonymous-or-onboarding') sawAnonymousRewards = true
+            } catch {
+                // Ignore pages that cannot be inspected during shutdown.
+            }
+        }
+
+        return !sawAnonymousRewards || sawAuthenticatedRewards
     }
 
     /**

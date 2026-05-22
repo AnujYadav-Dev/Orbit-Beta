@@ -36,6 +36,26 @@ test('saved page analyzer classifies Bing search captures separately', () => {
     assert.ok(analysis.problems.includes('No Rewards quiz/search attribution signals found'))
 })
 
+test('saved page analyzer reports Rewards welcome page as onboarding, not dashboard data', () => {
+    const html = `
+        <html>
+            <head><title>Welcome to Microsoft Rewards</title></head>
+            <body>
+                <a id="rewards-header-sign-in" href="/createuser?idru=%2Fdashboard">Sign in</a>
+            </body>
+        </html>
+    `
+    const analysis = analyzeSavedPage(html)
+
+    assert.equal(analysis.kind, 'unknown')
+    assert.ok(analysis.diagnostics.includes('Rewards welcome page detected instead of dashboard'))
+    assert.ok(
+        analysis.problems.includes(
+            'Open the Rewards dashboard manually or finish the welcome/onboarding page before running diagnostics'
+        )
+    )
+})
+
 test('collectScriptsForPage supports browser _files asset directories', () => {
     const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'msrb-analyzer-'))
     const pageFile = path.join(temp, 'Dashboard.htm')

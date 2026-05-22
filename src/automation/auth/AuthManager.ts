@@ -10,6 +10,7 @@ import { RecoveryStrategy } from './strategies/RecoveryStrategy'
 import { TotpStrategy } from './strategies/TotpStrategy'
 
 import type { Account } from '../../types/Account'
+import { classifyRewardsPage, isRewardsAnonymousOrOnboardingPage } from '../RewardsAuthState'
 
 type LoginState =
     | 'EMAIL_INPUT'
@@ -28,6 +29,7 @@ type LoginState =
     | 'GET_A_CODE'
     | 'GET_A_CODE_2'
     | 'OTP_CODE_ENTRY'
+    | 'REWARDS_SIGN_IN'
     | 'UNKNOWN'
     | 'CHROMEWEBDATA_ERROR'
 
@@ -61,6 +63,8 @@ export class AuthManager {
         otpCodeEntry: '[data-testid="codeEntry"]',
         backButton: '#back-button',
         bingProfile: '#id_n',
+        rewardsSignIn:
+            '#rewards-header-sign-in, a[href*="/createuser"][href*="idru"], a[href*="/createNewUser"][href*="idru"]',
         requestToken: 'input[name="__RequestVerificationToken"]',
         requestTokenMeta: 'meta[name="__RequestVerificationToken"]',
         otpInput: 'div[data-testid="codeEntry"]'
@@ -234,8 +238,34 @@ export class AuthManager {
             return 'ACCOUNT_LOCKED'
         }
 
-        if (url.hostname === 'rewards.bing.com' || url.hostname === 'account.microsoft.com') {
-            this.bot.logger.debug(this.bot.isMobile, 'DETECT-STATE', 'On rewards/account page, assuming logged in')
+        if (url.hostname === 'rewards.bing.com') {
+            const html = await page.content().catch(() => '')
+            const rewardsState = classifyRewardsPage(html, page.url())
+
+            if (rewardsState === 'authenticated-dashboard') {
+                this.bot.logger.debug(this.bot.isMobile, 'DETECT-STATE', 'Rewards dashboard authenticated')
+                return 'LOGGED_IN'
+            }
+
+            if (rewardsState === 'anonymous-or-onboarding') {
+                this.bot.logger.warn(
+                    this.bot.isMobile,
+                    'DETECT-STATE',
+                    'Rewards welcome/sign-in page detected instead of authenticated dashboard'
+                )
+                return 'REWARDS_SIGN_IN'
+            }
+
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                'DETECT-STATE',
+                'Rewards page did not expose dashboard auth signals yet'
+            )
+            return 'UNKNOWN'
+        }
+
+        if (url.hostname === 'account.microsoft.com') {
+            this.bot.logger.debug(this.bot.isMobile, 'DETECT-STATE', 'On account page, assuming logged in')
             return 'LOGGED_IN'
         }
 
@@ -393,6 +423,29 @@ export class AuthManager {
         return false
     }
 
+    private async continueFromRewardsSignIn(page: Page): Promise<boolean> {
+        this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Opening Microsoft sign-in from Rewards welcome page')
+
+        const signInLink = page.locator(this.selectors.rewardsSignIn).first()
+        if (await signInLink.isVisible().catch(() => false)) {
+            await signInLink.click().catch(async () => {
+                await this.bot.browser.utils.ghostClick(page, this.selectors.rewardsSignIn)
+            })
+        } else {
+            await page
+                .goto('https://rewards.bing.com/createuser?idru=%2Fdashboard&userScenarioId=anonsignin', {
+                    waitUntil: 'domcontentloaded',
+                    timeout: 10000
+                })
+                .catch(() => {})
+        }
+
+        await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {
+            this.bot.logger.debug(this.bot.isMobile, 'LOGIN', 'Network idle timeout after Rewards sign-in navigation')
+        })
+        return true
+    }
+
     private async handleState(state: LoginState, page: Page, account: Account): Promise<boolean> {
         this.bot.logger.debug(this.bot.isMobile, 'HANDLE-STATE', `Processing state: ${state}`)
 
@@ -412,6 +465,9 @@ export class AuthManager {
 
             case 'LOGGED_IN':
                 return true
+
+            case 'REWARDS_SIGN_IN':
+                return await this.continueFromRewardsSignIn(page)
 
             case 'EMAIL_INPUT': {
                 this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Entering email')
@@ -775,11 +831,13 @@ export class AuthManager {
 
         await page.goto(this.bot.config.baseURL, { waitUntil: 'networkidle', timeout: 10000 }).catch(() => {})
 
-        const loginRewardsSuccess = new URL(page.url()).hostname === 'rewards.bing.com'
-        if (loginRewardsSuccess) {
+        const rewardsVerified = await this.waitForAuthenticatedRewardsDashboard(page)
+        if (rewardsVerified) {
             this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Logged into Microsoft Rewards successfully')
         } else {
-            this.bot.logger.warn(this.bot.isMobile, 'LOGIN', 'Could not verify Rewards Dashboard, assuming login valid')
+            throw new Error(
+                'Rewards dashboard is not authenticated or onboarding is incomplete; Microsoft returned the Rewards welcome/sign-in page'
+            )
         }
 
         this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Starting Bing session verification')
@@ -794,6 +852,21 @@ export class AuthManager {
         await saveSessionData(this.bot.config.sessionPath, cookies, email, this.bot.isMobile)
 
         this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Login completed, session saved')
+    }
+
+    private async waitForAuthenticatedRewardsDashboard(page: Page): Promise<boolean> {
+        for (let i = 0; i < 3; i++) {
+            const html = await page.content().catch(() => '')
+            const rewardsState = classifyRewardsPage(html, page.url())
+
+            if (rewardsState === 'authenticated-dashboard') return true
+            if (rewardsState === 'anonymous-or-onboarding') return false
+
+            await this.bot.utils.wait(1000)
+            await page.goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {})
+        }
+
+        return false
     }
 
     async verifyBingSession(page: Page) {
@@ -877,6 +950,12 @@ export class AuthManager {
                     await this.bot.browser.utils.tryDismissAllMessages(page)
 
                     const html = await page.content()
+
+                    if (isRewardsAnonymousOrOnboardingPage(html, page.url())) {
+                        throw new Error(
+                            'Rewards dashboard is not authenticated or onboarding is incomplete; Microsoft returned the Rewards welcome/sign-in page'
+                        )
+                    }
 
                     // ── New Next.js dashboard detection ───────────────────────
                     // The new dashboard (Next.js + React Server Components) does NOT
