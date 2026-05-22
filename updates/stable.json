@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "channel": "stable",
+  "botVersion": "4.0.15",
+  "coreVersion": "1.0.3",
+  "compatibleNode": "24.15.0",
+  "archiveUrl": "https://github.com/QuestPilot/Microsoft-Rewards-Bot/archive/615645aebb87b80d960933d46db5c8e36c253b04.tar.gz",
+  "sha256": "97be154303a9eb33f3c1b284c52c631adb3e70b700d75ebf32a1934b6fd68845",
+  "excludes": [
+    ".git",
+    ".updates",
+    ".github",
+    ".dockerignore",
+    ".eslintrc.js",
+    ".gitattributes",
+    ".gitignore",
+    ".node-version",
+    ".nvmrc",
+    ".prettierrc",
+    "node_modules",
+    "dist",
+    "release",
+    "logs",
+    "diagnostics",
+    "Page",
+    "sessions",
+    "src/config.json",
+    "src/accounts.json",
+    "plugins/plugins.jsonc",
+    "plugins/*/node_modules",
+    "plugins/*/.cache"
+  ]
+}
