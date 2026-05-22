@@ -108,7 +108,7 @@ export class AuthManager {
                         this.bot.logger.info(
                             this.bot.isMobile,
                             'LOGIN',
-                            `Page closed after ${reason} — Microsoft triggered OS-level dialog (Windows Hello / passkey), attempting best-effort session recovery`
+                            `Page closed after ${reason} - Microsoft triggered OS-level dialog (Windows Hello / passkey), attempting best-effort session recovery`
                         )
                         break
                     }
@@ -159,7 +159,7 @@ export class AuthManager {
                     throw new Error(`Login failed or aborted at state: ${state}`)
                 }
 
-                // Track forward progress — used to detect graceful page closures caused
+                // Track forward progress - used to detect graceful page closures caused
                 // by OS-level credential dialogs (Windows Hello / passkey registration).
                 if (state === 'EMAIL_INPUT') emailEntered = true
                 if (state === 'PASSWORD_INPUT') passwordEntered = true
@@ -185,7 +185,7 @@ export class AuthManager {
                 this.bot.logger.warn(
                     this.bot.isMobile,
                     'LOGIN',
-                    'Page is closed at finalization — attempting best-effort session save'
+                    'Page is closed at finalization - attempting best-effort session save'
                 )
                 try {
                     const cookies = await page.context().cookies()
@@ -428,7 +428,7 @@ export class AuthManager {
                 await this.emailStrategy.enterPassword(page, account.password)
                 // Press Escape immediately after password submission to dismiss any
                 // browser-level save-password banner or Windows Hello prompt that Edge
-                // injects — this prevents the OS credential dialog from closing the page.
+                // injects - this prevents the OS credential dialog from closing the page.
                 await page.keyboard.press('Escape').catch(() => {})
                 await this.bot.utils.wait(300)
                 await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {
@@ -449,7 +449,7 @@ export class AuthManager {
                     return true
                 }
 
-                // First check: look for "Use your password" — a Fluent UI span[role="button"] OUTSIDE viewFooter
+                // First check: look for "Use your password" - a Fluent UI span[role="button"] OUTSIDE viewFooter
                 // Must use Playwright .click() (not native DOM .click()) because Fluent UI
                 // uses React synthetic events that only fire on proper mouse event sequences
                 const anyRoleButton = await page
@@ -675,7 +675,7 @@ export class AuthManager {
                         this.bot.logger.info(
                             this.bot.isMobile,
                             'LOGIN',
-                            'Passkey registration prompt appeared after KMSI — dismissing immediately'
+                            'Passkey registration prompt appeared after KMSI - dismissing immediately'
                         )
                         await this.bot.browser.utils.ghostClick(page, this.selectors.secondaryButton)
                         await this.bot.utils.wait(1000)
@@ -888,7 +888,7 @@ export class AuthManager {
                         this.bot.logger.info(
                             this.bot.isMobile,
                             'GET-REWARD-SESSION',
-                            'Next.js dashboard detected — CSRF token not needed, activities will use Server Action fallback'
+                            'Next.js dashboard detected - CSRF token not needed, activities will use Server Action fallback'
                         )
                         return
                     }

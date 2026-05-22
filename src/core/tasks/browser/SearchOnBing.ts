@@ -362,7 +362,7 @@ export class SearchOnBing extends TaskBase {
                 }
             }
         } catch (error) {
-            // Remote/local query file failed — try Bing suggestions from the
+            // Remote/local query file failed - try Bing suggestions from the
             // promotion description before falling back to just the title.
             this.bot.logger.debug(
                 this.bot.isMobile,

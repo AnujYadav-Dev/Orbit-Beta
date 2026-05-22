@@ -49,7 +49,7 @@ class BrowserManager {
         '--disable-save-password-bubble',
         // Prevents the native OS credential picker from being invoked
         '--password-store=basic',
-        // WebRTC leak prevention — prevents real IP exposure behind proxy
+        // WebRTC leak prevention - prevents real IP exposure behind proxy
         '--enforce-webrtc-ip-handling-policy',
         '--webrtc-ip-handling-policy=disable_non_proxied_udp',
         '--disable-webrtc-hw-encoding',
@@ -89,7 +89,7 @@ class BrowserManager {
             this.bot.logger.info(
                 this.bot.isMobile,
                 'BROWSER',
-                'Initializing browser — detecting available channel (Chromium › Chrome › Edge)...'
+                'Initializing browser - detecting available channel (Chromium › Chrome › Edge)...'
             )
 
             const proxyConfig = account.proxy.url
@@ -145,7 +145,7 @@ class BrowserManager {
                     }
                 })
 
-                // WebRTC IP leak prevention — force through proxy only
+                // WebRTC IP leak prevention - force through proxy only
                 const origRTCPeerConnection = window.RTCPeerConnection
                 if (origRTCPeerConnection) {
                     window.RTCPeerConnection = new Proxy(origRTCPeerConnection, {

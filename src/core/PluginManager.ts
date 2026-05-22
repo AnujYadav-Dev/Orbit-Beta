@@ -1,5 +1,5 @@
 /**
- * Orbit — Plugin Manager
+ * Orbit - Plugin Manager
  * Copyright (c) 2026 AnujYadav-Dev
  *
  * Licensed under the PolyForm Non-Commercial License 1.0.
@@ -99,7 +99,11 @@ export class PluginManager {
 
             try {
                 if (entry.isDirectory()) {
-                    await this.loadDirectoryPlugin(entryName, path.join(pluginsDir, entry.name), entryConfig?.config ?? {})
+                    await this.loadDirectoryPlugin(
+                        entryName,
+                        path.join(pluginsDir, entry.name),
+                        entryConfig?.config ?? {}
+                    )
                 } else if (entry.name.endsWith('.js') || entry.name.endsWith('.jsc')) {
                     await this.loadPluginFile(entryName, path.join(pluginsDir, entry.name), entryConfig?.config ?? {})
                 }

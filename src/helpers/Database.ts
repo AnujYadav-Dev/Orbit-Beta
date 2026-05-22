@@ -64,7 +64,7 @@ export async function initDB(): Promise<void> {
         );
     `)
 
-    console.log('[DATABASE] Connected to Neon Postgres — tables initialized')
+    console.log('[DATABASE] Connected to Neon Postgres - tables initialized')
 }
 
 /**

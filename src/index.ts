@@ -296,7 +296,7 @@ export class MicrosoftRewardsBot {
             void this.logger.info(
                 'main',
                 'CLUSTER-WORKER-TASK',
-                `Worker ${process.pid} received ${chunk.length} account(s) — launching browser, please wait...`
+                `Worker ${process.pid} received ${chunk.length} account(s) - launching browser, please wait...`
             )
             try {
                 const stats = await this.runTasks(chunk, runStartTime ?? runStartTimeFromMaster ?? Date.now())
@@ -464,7 +464,11 @@ export class MicrosoftRewardsBot {
                         )
                     }
                 } else {
-                    this.logger.debug('main', 'GET-APP-TOKEN', 'Skipping mobile access token: no app-only workers enabled')
+                    this.logger.debug(
+                        'main',
+                        'GET-APP-TOKEN',
+                        'Skipping mobile access token: no app-only workers enabled'
+                    )
                 }
 
                 this.cookies.mobile = await initialContext.cookies()
@@ -609,7 +613,7 @@ async function main(): Promise<void> {
     console.log('\x1b[36m') // Cyan color
     console.log('  ____                            _       ____        _   ')
     console.log(' |  _ \\ _____      ____ _ _ __ __| |___  | __ )  ___ | |_ ')
-    console.log(' | |_) / _ \\ \\ /\\ / / _` | \'__/ _` / __| |  _ \\ / _ \\| __|')
+    console.log(" | |_) / _ \\ \\ /\\ / / _` | '__/ _` / __| |  _ \\ / _ \\| __|")
     console.log(' |  _ <  __/\\ V  V / (_| | | | (_| \\__ \\ | |_) | (_) | |_ ')
     console.log(' |_| \\_\\___| \\_/\\_/ \\__,_|_|  \\__,_|___/ |____/ \\___/ \\__|')
     console.log('\x1b[0m') // Reset color
@@ -695,7 +699,11 @@ async function runScheduled(rewardsBot: MicrosoftRewardsBot): Promise<number> {
             const exitCode = await runSingle(rewardsBot)
             if (exitCode !== 0) return exitCode
             if (rewardsBot.dashboardStopRequested) {
-                rewardsBot.logger.info('main', 'SCHEDULER', 'Remote stop requested. Scheduler will stop after the current run.')
+                rewardsBot.logger.info(
+                    'main',
+                    'SCHEDULER',
+                    'Remote stop requested. Scheduler will stop after the current run.'
+                )
                 return 0
             }
         }

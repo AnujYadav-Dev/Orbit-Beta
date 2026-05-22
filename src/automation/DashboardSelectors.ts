@@ -1,5 +1,5 @@
 /**
- * Orbit — Core Selectors
+ * Orbit - Core Selectors
  * Copyright (c) 2026 AnujYadav-Dev
  *
  * Licensed under the PolyForm Non-Commercial License 1.0.

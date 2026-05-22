@@ -208,7 +208,7 @@ export class Quiz extends TaskBase {
                 await this.bot.utils.wait(2000)
             }
 
-            // 8-question quiz — not supported
+            // 8-question quiz - not supported
             if (promotion.activityProgressMax === 80) {
                 this.bot.logger.warn(
                     this.bot.isMobile,
@@ -218,7 +218,7 @@ export class Quiz extends TaskBase {
                 return
             }
 
-            // Poll (pointProgressMax=10) — single call
+            // Poll (pointProgressMax=10) - single call
             if (promotion.pointProgressMax === 10) {
                 const ok = await this.bot.browser.func.reportActivityViaBrowser(page, {
                     offerId,
@@ -251,7 +251,7 @@ export class Quiz extends TaskBase {
                 return
             }
 
-            // Standard quizzes (20/30/40/50 max) — loop until no more points gained
+            // Standard quizzes (20/30/40/50 max) - loop until no more points gained
             if ([20, 30, 40, 50].includes(promotion.pointProgressMax)) {
                 let oldBalance = startBalance
                 let totalGained = 0

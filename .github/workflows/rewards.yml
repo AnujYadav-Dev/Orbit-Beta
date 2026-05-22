@@ -1,43 +1,43 @@
-name: Orbit — Scheduled Run
+name: Orbit - Scheduled Run
 
 on:
-  schedule:
-    # Runs daily at 12:15 PM UTC. Adjust to your preferred time.
-    - cron: '15 12 * * *'
-  workflow_dispatch:
-    # Allows manual trigger from the GitHub Actions tab
+    schedule:
+        # Runs daily at 12:15 PM UTC. Adjust to your preferred time.
+        - cron: '15 12 * * *'
+    workflow_dispatch:
+        # Allows manual trigger from the GitHub Actions tab
 
 jobs:
-  run-bot:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    run-bot:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
 
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
-      CONFIG_JSON: ${{ secrets.CONFIG_JSON }}
-      # Force headless and non-interactive mode
-      FORCE_HEADLESS: '1'
-      CI: 'true'
+        env:
+            DATABASE_URL: ${{ secrets.DATABASE_URL }}
+            ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
+            CONFIG_JSON: ${{ secrets.CONFIG_JSON }}
+            # Force headless and non-interactive mode
+            FORCE_HEADLESS: '1'
+            CI: 'true'
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-      - name: Set up Node.js 24.15.0
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24.15.0'
-          cache: 'npm'
+            - name: Set up Node.js 24.15.0
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '24.15.0'
+                  cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Install Chromium browser
-        run: npx patchright install --with-deps chromium
+            - name: Install Chromium browser
+              run: npx patchright install --with-deps chromium
 
-      - name: Build the bot
-        run: npm run build
+            - name: Build the bot
+              run: npm run build
 
-      - name: Run the bot
-        run: node ./dist/index.js
+            - name: Run the bot
+              run: node ./dist/index.js

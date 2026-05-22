@@ -19,7 +19,7 @@ export interface IpcLog {
 
 type ChalkFn = (msg: string) => string
 
-// Unique ID for this bot run — used to group logs in the dashboard
+// Unique ID for this bot run - used to group logs in the dashboard
 const RUN_ID = crypto.randomUUID()
 
 function platformText(platform: Platform): DashboardPlatform {
@@ -189,7 +189,7 @@ export class LogService {
                 [RUN_ID, level, title, platform, username, message, pointsData ? JSON.stringify(pointsData) : null]
             )
         } catch {
-            // Silently fail — logging should never crash the bot
+            // Silently fail - logging should never crash the bot
         }
     }
 

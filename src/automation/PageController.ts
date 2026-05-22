@@ -83,7 +83,9 @@ export default class PageController {
 
             try {
                 const page = this.bot.isMobile ? this.bot.mainMobilePage : this.bot.mainDesktopPage
-                await page.goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => {})
+                await page
+                    .goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+                    .catch(() => {})
                 const html = await page.content()
                 return this.parseDashboardHtml(html)
             } catch (fallbackError) {
@@ -96,7 +98,11 @@ export default class PageController {
     private parseDashboardHtml(html: string): DashboardData {
         const legacyMatch = html.match(/var\s+dashboard\s*=\s*({.*?});/s)
         if (legacyMatch?.[1]) {
-            this.bot.logger.debug(this.bot.isMobile, 'GET-DASHBOARD-DATA', 'Extracted dashboard data from legacy HTML embed')
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                'GET-DASHBOARD-DATA',
+                'Extracted dashboard data from legacy HTML embed'
+            )
             return JSON.parse(legacyMatch[1]) as DashboardData
         }
 
@@ -520,7 +526,7 @@ export default class PageController {
      *    `Next-Action` header, matching the React Server Action protocol.
      *
      * Runs inside the Playwright page context so session cookies are attached
-     * automatically — no CSRF token is needed.
+     * automatically - no CSRF token is needed.
      *
      * **Important**: The new Next.js dashboard uses DIFFERENT hash/offerId
      * values than the legacy `getuserinfo?type=1` API.  When `destinationUrl`
@@ -583,7 +589,7 @@ export default class PageController {
                     actionModuleKey = extracted.moduleKey
                 }
             } catch {
-                // waitForFunction timed out — will try script source fallback
+                // waitForFunction timed out - will try script source fallback
             }
 
             // ─ Fallback: fetch /_next/ script sources and search text ───
@@ -722,7 +728,7 @@ export default class PageController {
                                 const context = text.slice(start, end)
                                 const oIdPosInContext = oIdIndex - start
 
-                                // Find nearest hash field — works with both escaped (\") and normal (") quotes
+                                // Find nearest hash field - works with both escaped (\") and normal (") quotes
                                 // Pattern: "hash" followed by 1-10 non-hex chars then 40-64 hex chars
                                 const hashRe = /hash[^a-f0-9]{1,10}([a-f0-9]{40,64})/g
                                 let nearest: string | null = null
@@ -770,7 +776,7 @@ export default class PageController {
                                                     dest.includes(normTarget) ||
                                                     (targetQ && destQ && targetQ === destQ)
                                                 ) {
-                                                    // Find associated offerId — ONLY return if it matches the requested one
+                                                    // Find associated offerId - ONLY return if it matches the requested one
                                                     const oidMatch = ctx.match(/offerId[^a-zA-Z]{1,10}([A-Za-z0-9_]+)/)
                                                     const foundOid = oidMatch?.[1]
                                                     if (!foundOid || foundOid === matchArgs.offerId) {
@@ -827,7 +833,7 @@ export default class PageController {
                     )
                 }
             } catch {
-                // RSC resolution failed — continue with API values
+                // RSC resolution failed - continue with API values
             }
 
             // ── Step 2: Call the Server Action ──────────────────────
@@ -902,7 +908,7 @@ export default class PageController {
                                         }
                                     }
                                 } catch {
-                                    /* force-require failed — fall through to cache search */
+                                    /* force-require failed - fall through to cache search */
                                 }
                             }
 
@@ -942,7 +948,7 @@ export default class PageController {
                                 opts.isPromotional = String(args.isPromotional)
                             }
 
-                            // Call: reportActivity(hash, type, opts) — through React's callServer
+                            // Call: reportActivity(hash, type, opts) - through React's callServer
                             const result = await actionFn(args.hash, args.finalType, opts)
                             return { success: result === true, error: null }
                         } catch (err) {
@@ -962,7 +968,7 @@ export default class PageController {
                     }
                 )
             } catch {
-                // Webpack approach threw — will fall through to manual fetch
+                // Webpack approach threw - will fall through to manual fetch
             }
 
             if (nativeResult !== null && typeof nativeResult === 'object' && 'success' in nativeResult) {

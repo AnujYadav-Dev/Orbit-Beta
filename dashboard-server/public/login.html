@@ -1,79 +1,96 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login — Rewards Dashboard</title>
-  <link rel="stylesheet" href="/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
-</head>
-<body>
-  <div class="bg-mesh"></div>
-  <div class="bg-noise"></div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login - Rewards Dashboard</title>
+        <link rel="stylesheet" href="/style.css" />
+        <link
+            rel="icon"
+            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>"
+        />
+    </head>
+    <body>
+        <div class="bg-mesh"></div>
+        <div class="bg-noise"></div>
 
-  <div class="login-wrapper">
-    <div class="login-card">
-      <div class="login-logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+        <div class="login-wrapper">
+            <div class="login-card">
+                <div class="login-logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                                stroke="white"
+                                stroke-width="2"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        </svg>
+                    </div>
+                    <h1>Rewards Dashboard</h1>
+                    <p>Enter your access token to continue</p>
+                </div>
+
+                <div class="login-error" id="loginError"></div>
+
+                <form id="loginForm" autocomplete="off">
+                    <div class="login-field">
+                        <label for="token">Access Token</label>
+                        <input
+                            type="password"
+                            id="token"
+                            name="token"
+                            placeholder="Enter your secret token…"
+                            required
+                            autofocus
+                        />
+                    </div>
+                    <button type="submit" class="login-btn" id="loginBtn">
+                        <span id="loginBtnText">Authenticate</span>
+                    </button>
+                </form>
+            </div>
         </div>
-        <h1>Rewards Dashboard</h1>
-        <p>Enter your access token to continue</p>
-      </div>
 
-      <div class="login-error" id="loginError"></div>
+        <script>
+            const form = document.getElementById('loginForm')
+            const errorEl = document.getElementById('loginError')
+            const btn = document.getElementById('loginBtn')
+            const btnText = document.getElementById('loginBtnText')
 
-      <form id="loginForm" autocomplete="off">
-        <div class="login-field">
-          <label for="token">Access Token</label>
-          <input type="password" id="token" name="token" placeholder="Enter your secret token…" required autofocus>
-        </div>
-        <button type="submit" class="login-btn" id="loginBtn">
-          <span id="loginBtnText">Authenticate</span>
-        </button>
-      </form>
-    </div>
-  </div>
+            form.addEventListener('submit', async e => {
+                e.preventDefault()
+                errorEl.style.display = 'none'
+                btn.disabled = true
+                btnText.innerHTML = '<span class="spinner"></span>'
 
-  <script>
-    const form = document.getElementById('loginForm');
-    const errorEl = document.getElementById('loginError');
-    const btn = document.getElementById('loginBtn');
-    const btnText = document.getElementById('loginBtnText');
+                try {
+                    const token = document.getElementById('token').value
+                    const res = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    })
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errorEl.style.display = 'none';
-      btn.disabled = true;
-      btnText.innerHTML = '<span class="spinner"></span>';
+                    const data = await res.json()
 
-      try {
-        const token = document.getElementById('token').value;
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-          window.location.href = '/';
-        } else {
-          errorEl.textContent = data.error || 'Authentication failed';
-          errorEl.style.display = 'block';
-          btnText.textContent = 'Authenticate';
-          btn.disabled = false;
-        }
-      } catch (err) {
-        errorEl.textContent = 'Connection error. Please try again.';
-        errorEl.style.display = 'block';
-        btnText.textContent = 'Authenticate';
-        btn.disabled = false;
-      }
-    });
-  </script>
-</body>
+                    if (res.ok && data.success) {
+                        window.location.href = '/'
+                    } else {
+                        errorEl.textContent = data.error || 'Authentication failed'
+                        errorEl.style.display = 'block'
+                        btnText.textContent = 'Authenticate'
+                        btn.disabled = false
+                    }
+                } catch (err) {
+                    errorEl.textContent = 'Connection error. Please try again.'
+                    errorEl.style.display = 'block'
+                    btnText.textContent = 'Authenticate'
+                    btn.disabled = false
+                }
+            })
+        </script>
+    </body>
 </html>

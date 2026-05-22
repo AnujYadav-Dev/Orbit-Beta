@@ -343,7 +343,7 @@ export default class AutomationUtils {
     }
 
     async disableFido(page: Page) {
-        // ── Intercept GetCredentialType — declare isFidoSupported=false ──────
+        // ── Intercept GetCredentialType - declare isFidoSupported=false ──────
         // This prevents Microsoft login from offering passkey as a sign-in method.
         const credentialTypePattern = '**/GetCredentialType.srf*'
         await page.route(credentialTypePattern, route => {
@@ -377,7 +377,7 @@ export default class AutomationUtils {
             }
         })
 
-        // ── Intercept WebAuthn passkey creation/get requests — abort them ───
+        // ── Intercept WebAuthn passkey creation/get requests - abort them ───
         // These endpoints are called when the browser tries to create or retrieve
         // a passkey through the platform authenticator (triggers Windows Security dialog).
         //
@@ -400,11 +400,7 @@ export default class AutomationUtils {
                     return
                 }
 
-                this.bot.logger.debug(
-                    this.bot.isMobile,
-                    'DISABLE-FIDO',
-                    `Blocked WebAuthn request: ${request.url()}`
-                )
+                this.bot.logger.debug(this.bot.isMobile, 'DISABLE-FIDO', `Blocked WebAuthn request: ${request.url()}`)
                 route.abort('blockedbyclient')
             })
         }

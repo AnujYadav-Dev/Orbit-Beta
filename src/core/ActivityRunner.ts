@@ -68,42 +68,42 @@ export default class ActivityRunner {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PREMIUM TASKS (no-op stubs — replaced by plugin if installed)
+    // PREMIUM TASKS (no-op stubs - replaced by plugin if installed)
     // ═══════════════════════════════════════════════════════════════════════
 
     doDoubleSearchPoints = async (promotion: PurplePromotionalItem): Promise<void> => {
         if (this.premiumTasks.doDoubleSearchPoints) {
             return this.premiumTasks.doDoubleSearchPoints(promotion)
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for DoubleSearchPoints — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for DoubleSearchPoints - skipping')
     }
 
     doAppReward = async (promotion: Promotion): Promise<void> => {
         if (this.premiumTasks.doAppReward) {
             return this.premiumTasks.doAppReward(promotion)
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for AppReward — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for AppReward - skipping')
     }
 
     doReadToEarn = async (): Promise<void> => {
         if (this.premiumTasks.doReadToEarn) {
             return this.premiumTasks.doReadToEarn()
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for ReadToEarn — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for ReadToEarn - skipping')
     }
 
     doDailyCheckIn = async (): Promise<void> => {
         if (this.premiumTasks.doDailyCheckIn) {
             return this.premiumTasks.doDailyCheckIn()
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for DailyCheckIn — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for DailyCheckIn - skipping')
     }
 
     doDailyStreak = async (page: Page): Promise<DailyStreakInfo | null> => {
         if (this.premiumTasks.doDailyStreak) {
             return this.premiumTasks.doDailyStreak(page)
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for DailyStreak — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for DailyStreak - skipping')
         return null
     }
 
@@ -111,14 +111,14 @@ export default class ActivityRunner {
         if (this.premiumTasks.doRedeemGoal) {
             return this.premiumTasks.doRedeemGoal(page, config)
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for RedeemGoal — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for RedeemGoal - skipping')
     }
 
     collectDashboardInfo = async (page: Page): Promise<DashboardInfo> => {
         if (this.premiumTasks.collectDashboardInfo) {
             return this.premiumTasks.collectDashboardInfo(page)
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for DashboardInfo — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for DashboardInfo - skipping')
         return {
             userName: null,
             level: null,
@@ -135,7 +135,7 @@ export default class ActivityRunner {
         if (this.premiumTasks.doClaimPoints) {
             return this.premiumTasks.doClaimPoints(page)
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for ClaimPoints — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for ClaimPoints - skipping')
         return { claimed: false, pointsClaimed: 0, entries: [] }
     }
 
@@ -143,7 +143,7 @@ export default class ActivityRunner {
         if (this.premiumTasks.doTemporaryPunchcards) {
             return this.premiumTasks.doTemporaryPunchcards(page)
         }
-        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for TemporaryPunchcards — skipping')
+        this.bot.logger.warn('main', 'PLUGIN', 'Premium plugin required for TemporaryPunchcards - skipping')
         return { visited: 0, completedSteps: 0, skippedSteps: 0 }
     }
 

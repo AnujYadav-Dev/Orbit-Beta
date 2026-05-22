@@ -56,7 +56,7 @@ If you want to change this, edit the `.github/workflows/rewards.yml` file in you
 
 ### 4. Run the Bot!
 1. Go to the **Actions** tab in your repository.
-2. Select **Orbit — Scheduled Run** on the left.
+2. Select **Orbit - Scheduled Run** on the left.
 3. Click the **Run workflow** dropdown on the right and click **Run workflow**.
 4. You can click into the workflow run to watch the live console logs.
 
