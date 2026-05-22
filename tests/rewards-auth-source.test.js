@@ -23,3 +23,12 @@ test('dashboard parser rejects anonymous Rewards welcome pages before parsing da
     assert.match(controller, /isRewardsAnonymousOrOnboardingPage/)
     assert.match(controller, /welcome\/sign-in page/)
 })
+
+test('dashboard fetch has browser API and Next.js RSC fallbacks', () => {
+    const controller = read('src/automation/PageController.ts')
+
+    assert.match(controller, /getDashboardDataViaBrowserApi/)
+    assert.match(controller, /parseNextDashboardHtml/)
+    assert.match(controller, /extractRewardsActivities/)
+    assert.match(controller, /Built dashboard data from Next\.js Rewards page payload/)
+})

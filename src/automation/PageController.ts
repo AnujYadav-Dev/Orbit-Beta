@@ -7,11 +7,12 @@ import type { MicrosoftRewardsBot } from '../index'
 
 import type { AppDashboardData } from '../types/AppDashboardData'
 import type { AppUserData } from '../types/AppUserData'
-import type { Counters, DashboardData } from '../types/DashboardData'
+import type { BasePromotion, Counters, DashboardData } from '../types/DashboardData'
 import type { AppEarnablePoints, BrowserEarnablePoints, MissingSearchPoints } from '../types/Points'
 import type { XboxDashboardData } from '../types/XboxDashboardData'
 import { URLS } from './DashboardSelectors'
 import { classifyRewardsPage, isRewardsAnonymousOrOnboardingPage } from './RewardsAuthState'
+import { extractNextFlightTextFromHtml, extractRewardsActivities } from './RewardsPageAnalyzer'
 
 export default class PageController {
     private bot: MicrosoftRewardsBot
@@ -87,6 +88,9 @@ export default class PageController {
                 await page
                     .goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 30_000 })
                     .catch(() => {})
+                const browserApiData = await this.getDashboardDataViaBrowserApi(page)
+                if (browserApiData) return browserApiData
+
                 const html = await page.content()
                 return this.parseDashboardHtml(html)
             } catch (fallbackError) {
@@ -137,7 +141,211 @@ export default class PageController {
             }
         }
 
+        const nextDashboardData = this.parseNextDashboardHtml(html)
+        if (nextDashboardData) {
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                'GET-DASHBOARD-DATA',
+                'Built dashboard data from Next.js Rewards page payload'
+            )
+            return nextDashboardData
+        }
+
         throw new Error('Dashboard data not found in HTML (tried legacy embed + Next.js chunks)')
+    }
+
+    private async getDashboardDataViaBrowserApi(page: Page): Promise<DashboardData | null> {
+        try {
+            const response = await page.evaluate(async apiUrl => {
+                try {
+                    const resp = await fetch(apiUrl, {
+                        credentials: 'include',
+                        headers: { Accept: 'application/json' }
+                    })
+                    const text = await resp.text()
+                    return {
+                        ok: resp.ok,
+                        status: resp.status,
+                        data: text ? JSON.parse(text) : null
+                    }
+                } catch (error) {
+                    return {
+                        ok: false,
+                        status: 0,
+                        data: null,
+                        error: error instanceof Error ? error.message : String(error)
+                    }
+                }
+            }, URLS.dashboardApi)
+
+            if (response.ok && response.data?.dashboard) {
+                this.bot.logger.debug(
+                    this.bot.isMobile,
+                    'GET-DASHBOARD-DATA',
+                    'Fetched dashboard data through browser session API'
+                )
+                return response.data.dashboard as DashboardData
+            }
+
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                'GET-DASHBOARD-DATA',
+                `Browser session API did not return dashboard data | status=${response.status}`
+            )
+            return null
+        } catch (error) {
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                'GET-DASHBOARD-DATA',
+                `Browser session API fallback failed: ${error instanceof Error ? error.message : String(error)}`
+            )
+            return null
+        }
+    }
+
+    private parseNextDashboardHtml(html: string): DashboardData | null {
+        const flightText = extractNextFlightTextFromHtml(html)
+        if (!flightText) return null
+
+        const activities = extractRewardsActivities(flightText)
+        if (!activities.length && !flightText.includes('Dashboard')) return null
+
+        const availablePoints = this.readAvailablePoints(html)
+        const country = this.readTelemetryField(html, 'country') ?? 'us'
+        const language = this.readTelemetryField(html, 'language') ?? 'en'
+        const today = this.bot.utils.getFormattedDate()
+
+        const promotions = [
+            ...new Map(
+                activities
+                    .filter(activity => activity.offerId && activity.hash)
+                    .map(activity => [`${activity.type}:${activity.offerId}:${activity.hash}`, activity] as const)
+            ).values()
+        ].map(activity => this.rscActivityToPromotion(activity))
+
+        const dailySetPromotions = promotions.filter(p => p.activityType === 'dailyset')
+        const morePromotions = promotions.filter(p => p.activityType !== 'dailyset')
+
+        return {
+            userStatus: {
+                availablePoints,
+                counters: this.emptyCounters(),
+                isRewardsUser: true,
+                levelInfo: {
+                    activeLevel: '',
+                    activeLevelName: '',
+                    progress: 0,
+                    progressMax: 0
+                }
+            },
+            userProfile: {
+                ruid: '',
+                attributes: {
+                    country,
+                    language
+                }
+            },
+            dailySetPromotions: dailySetPromotions.length ? { [today]: dailySetPromotions } : {},
+            morePromotions,
+            morePromotionsWithoutPromotionalItems: [],
+            promotionalItems: [],
+            streakBonusPromotions: [],
+            punchCards: [],
+            userWarnings: [],
+            dashboardFlights: {},
+            componentImpressionPromotions: []
+        } as unknown as DashboardData
+    }
+
+    private rscActivityToPromotion(activity: ReturnType<typeof extractRewardsActivities>[number]): BasePromotion {
+        const points = Math.max(0, activity.points ?? 0)
+        const progressMax = points > 0 ? points : 1
+        const complete = activity.isCompleted === true
+        const type = this.normalizeRscPromotionType(activity.type)
+
+        return {
+            name: activity.title ?? activity.offerId ?? activity.type,
+            priority: 0,
+            attributes: {
+                destination: activity.destination ?? activity.destinationUrl ?? '',
+                offerid: activity.offerId ?? '',
+                progress: complete ? String(progressMax) : '0',
+                max: String(progressMax),
+                type,
+                title: activity.title ?? '',
+                complete: complete ? 'True' : 'False',
+                give_eligible: 'False'
+            },
+            offerId: activity.offerId ?? '',
+            complete,
+            counter: 0,
+            activityProgress: complete ? progressMax : 0,
+            activityProgressMax: progressMax,
+            pointProgressMax: progressMax,
+            pointProgress: complete ? progressMax : 0,
+            promotionType: type,
+            promotionSubtype: '',
+            title: activity.title ?? activity.offerId ?? activity.type,
+            extBannerTitle: '',
+            titleStyle: '',
+            theme: '',
+            description: '',
+            extBannerDescription: '',
+            descriptionStyle: '',
+            showcaseTitle: '',
+            showcaseDescription: '',
+            imageUrl: '',
+            dynamicImage: '',
+            smallImageUrl: '',
+            backgroundImageUrl: '',
+            showcaseBackgroundImageUrl: '',
+            showcaseBackgroundLargeImageUrl: '',
+            promotionBackgroundLeft: '',
+            promotionBackgroundRight: '',
+            iconUrl: '',
+            animatedIconUrl: '',
+            animatedLargeBackgroundImageUrl: '',
+            destinationUrl: activity.destinationUrl ?? activity.destination ?? '',
+            linkText: '',
+            hash: activity.hash ?? '',
+            activityType: activity.type,
+            isRecurring: false,
+            isHidden: false,
+            isTestOnly: false,
+            isGiveEligible: false,
+            level: '',
+            exclusiveLockedFeatureStatus: 'unlocked'
+        } as unknown as BasePromotion
+    }
+
+    private normalizeRscPromotionType(type: string): string {
+        if (type === 'dailyset') return 'urlreward'
+        if (type === 'quiz') return 'quiz'
+        return 'urlreward'
+    }
+
+    private readAvailablePoints(html: string): number {
+        const availablePointsMatch = html.match(/Available points[\s\S]{0,700}?class="text-pageHeader">([\d,]+)/i)
+        if (availablePointsMatch?.[1]) return Number(availablePointsMatch[1].replace(/,/g, ''))
+
+        const headerPointsMatch = html.match(/<p>([\d,]+)<\/p>[\s\S]{0,300}?alt="(?:Silver|Gold|Level)/i)
+        if (headerPointsMatch?.[1]) return Number(headerPointsMatch[1].replace(/,/g, ''))
+
+        return 0
+    }
+
+    private readTelemetryField(html: string, field: string): string | null {
+        const match = html.match(new RegExp(`window\\.telemetryContext\\s*=\\s*\\{[\\s\\S]*?"${field}"\\s*:\\s*"([^"]+)"`))
+        return match?.[1] ?? null
+    }
+
+    private emptyCounters(): Counters {
+        return {
+            pcSearch: [],
+            mobileSearch: [],
+            activityAndQuiz: [],
+            dailyPoint: []
+        }
     }
 
     /**
