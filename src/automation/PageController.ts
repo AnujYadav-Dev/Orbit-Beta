@@ -12,6 +12,217 @@ import type { AppEarnablePoints, BrowserEarnablePoints, MissingSearchPoints } fr
 import type { XboxDashboardData } from '../types/XboxDashboardData'
 import { URLS } from './DashboardSelectors'
 
+export type RewardsPageKind = 'dashboard' | 'welcome' | 'login' | 'unknown'
+
+export interface RewardsPageClassification {
+    kind: RewardsPageKind
+    reason: string
+}
+
+export class RewardsWelcomeError extends Error {
+    constructor(message = 'Microsoft Rewards opened the welcome/onboarding page instead of the dashboard. Finish the Rewards welcome/onboarding page once, then rerun Orbit.') {
+        super(message)
+        this.name = 'RewardsWelcomeError'
+    }
+}
+
+export function classifyRewardsPage(html: string, url = '', title = ''): RewardsPageClassification {
+    const lowerUrl = url.toLowerCase()
+    const lowerTitle = title.toLowerCase()
+
+    if (
+        lowerUrl.includes('login.live.com') ||
+        lowerUrl.includes('signin') ||
+        lowerUrl.includes('oauth') ||
+        /name=["']pageid["']\s+content=["'][^"']*signin/i.test(html)
+    ) {
+        return { kind: 'login', reason: 'login URL or page metadata detected' }
+    }
+
+    if (
+        lowerUrl.includes('/welcome') ||
+        lowerTitle.includes('welcome to microsoft rewards') ||
+        /rewards-coldstart/i.test(html) ||
+        /name=["']pageid["']\s+content=["']rewards-coldstart["']/i.test(html) ||
+        /Welcome to Microsoft Rewards/i.test(html)
+    ) {
+        return { kind: 'welcome', reason: 'Rewards welcome/coldstart page detected' }
+    }
+
+    if (isDashboardPayload(html)) {
+        return { kind: 'dashboard', reason: 'dashboard data payload detected' }
+    }
+
+    if (lowerUrl.includes('rewards.bing.com/dashboard') && /section\s+id=["'](?:snapshot|dailyset)["']/i.test(html)) {
+        return { kind: 'dashboard', reason: 'dashboard URL and dashboard sections detected' }
+    }
+
+    return { kind: 'unknown', reason: 'no known Rewards dashboard, welcome, or login signals detected' }
+}
+
+export function isDashboardPayload(html: string): boolean {
+    if (/var\s+dashboard\s*=/.test(html)) return true
+    return extractNextDashboardData(html) !== null
+}
+
+export function parseDashboardHtmlPayload(html: string): DashboardData {
+    const legacy = extractLegacyDashboardData(html)
+    if (legacy) return legacy
+
+    const next = extractNextDashboardData(html)
+    if (next) return next
+
+    const classification = classifyRewardsPage(html)
+    if (classification.kind === 'welcome') {
+        throw new RewardsWelcomeError()
+    }
+
+    throw new Error('Dashboard data not found in HTML (tried legacy embed + Next.js chunks)')
+}
+
+function extractLegacyDashboardData(html: string): DashboardData | null {
+    const marker = html.match(/var\s+dashboard\s*=/)
+    if (marker?.index === undefined) return null
+
+    const start = html.indexOf('{', marker.index)
+    if (start === -1) return null
+
+    const end = findMatchingJsonEnd(html, start, '{', '}')
+    if (end === -1) return null
+
+    try {
+        const parsed = JSON.parse(html.slice(start, end + 1)) as unknown
+        return isDashboardData(parsed) ? parsed : null
+    } catch {
+        return null
+    }
+}
+
+function extractNextDashboardData(html: string): DashboardData | null {
+    for (const payload of extractNextFlightPayloads(html)) {
+        const parsed = parseDashboardObjectFromText(payload)
+        if (parsed) return parsed
+    }
+
+    return parseDashboardObjectFromText(html)
+}
+
+function extractNextFlightPayloads(html: string): string[] {
+    const payloads: string[] = []
+    const marker = 'self.__next_f.push('
+    let searchFrom = 0
+
+    while (searchFrom < html.length) {
+        const markerIndex = html.indexOf(marker, searchFrom)
+        if (markerIndex === -1) break
+
+        const arrayStart = html.indexOf('[', markerIndex + marker.length)
+        if (arrayStart === -1) break
+
+        const arrayEnd = findMatchingJsonEnd(html, arrayStart, '[', ']')
+        if (arrayEnd === -1) {
+            searchFrom = markerIndex + marker.length
+            continue
+        }
+
+        const rawArray = html.slice(arrayStart, arrayEnd + 1)
+        try {
+            const parsed = JSON.parse(rawArray) as unknown
+            collectStrings(parsed, payloads)
+        } catch {
+            const stringPayload = rawArray.match(/^\[\d+,"([\s\S]*)"\]$/)?.[1]
+            if (stringPayload) {
+                payloads.push(stringPayload.replace(/\\"/g, '"').replace(/\\\\/g, '\\'))
+            }
+        }
+
+        searchFrom = arrayEnd + 1
+    }
+
+    return payloads
+}
+
+function collectStrings(value: unknown, output: string[]): void {
+    if (typeof value === 'string') {
+        output.push(value)
+        return
+    }
+
+    if (Array.isArray(value)) {
+        for (const item of value) collectStrings(item, output)
+        return
+    }
+
+    if (value && typeof value === 'object') {
+        for (const item of Object.values(value)) collectStrings(item, output)
+    }
+}
+
+function parseDashboardObjectFromText(text: string): DashboardData | null {
+    let markerIndex = text.indexOf('"userStatus"')
+    while (markerIndex !== -1) {
+        for (let start = markerIndex; start >= 0; start--) {
+            if (text[start] !== '{') continue
+
+            const end = findMatchingJsonEnd(text, start, '{', '}')
+            if (end === -1 || end < markerIndex) continue
+
+            try {
+                const parsed = JSON.parse(text.slice(start, end + 1)) as unknown
+                if (isDashboardData(parsed)) return parsed
+            } catch {
+                // Keep walking backward; the marker can live inside a larger RSC string.
+            }
+        }
+
+        markerIndex = text.indexOf('"userStatus"', markerIndex + 1)
+    }
+
+    return null
+}
+
+function findMatchingJsonEnd(text: string, start: number, open: '{' | '[', close: '}' | ']'): number {
+    let depth = 0
+    let inString = false
+    let escaped = false
+
+    for (let i = start; i < text.length; i++) {
+        const ch = text[i]
+
+        if (inString) {
+            if (escaped) {
+                escaped = false
+            } else if (ch === '\\') {
+                escaped = true
+            } else if (ch === '"') {
+                inString = false
+            }
+            continue
+        }
+
+        if (ch === '"') {
+            inString = true
+        } else if (ch === open) {
+            depth++
+        } else if (ch === close) {
+            depth--
+            if (depth === 0) return i
+        }
+    }
+
+    return -1
+}
+
+function isDashboardData(value: unknown): value is DashboardData {
+    return Boolean(
+        value &&
+            typeof value === 'object' &&
+            'userStatus' in value &&
+            value.userStatus &&
+            typeof value.userStatus === 'object'
+    )
+}
+
 export default class PageController {
     private bot: MicrosoftRewardsBot
 
@@ -73,7 +284,8 @@ export default class PageController {
 
                 const response = await this.bot.axios.request(request)
                 return this.parseDashboardHtml(String(response.data))
-            } catch {
+            } catch (htmlError) {
+                if (htmlError instanceof RewardsWelcomeError) throw htmlError
                 this.bot.logger.warn(
                     this.bot.isMobile,
                     'GET-DASHBOARD-DATA',
@@ -87,6 +299,10 @@ export default class PageController {
                     .goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 30_000 })
                     .catch(() => {})
                 const html = await page.content()
+                const classification = classifyRewardsPage(html, page.url(), await page.title().catch(() => ''))
+                if (classification.kind === 'welcome') {
+                    throw new RewardsWelcomeError()
+                }
                 return this.parseDashboardHtml(html)
             } catch (fallbackError) {
                 this.bot.logger.error(this.bot.isMobile, 'GET-DASHBOARD-DATA', 'Failed to get dashboard data')
@@ -96,41 +312,30 @@ export default class PageController {
     }
 
     private parseDashboardHtml(html: string): DashboardData {
-        const legacyMatch = html.match(/var\s+dashboard\s*=\s*({.*?});/s)
-        if (legacyMatch?.[1]) {
+        const legacy = extractLegacyDashboardData(html)
+        if (legacy) {
             this.bot.logger.debug(
                 this.bot.isMobile,
                 'GET-DASHBOARD-DATA',
                 'Extracted dashboard data from legacy HTML embed'
             )
-            return JSON.parse(legacyMatch[1]) as DashboardData
+            return legacy
         }
 
-        const nextChunks = html.matchAll(/self\.__next_f\.push\(\[\d+,"(.*?)"\]\)/gs)
-        for (const chunk of nextChunks) {
-            const raw = chunk[1]
-            if (!raw || !raw.includes('userStatus')) continue
-
-            try {
-                const unescaped = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\')
-                const jsonMatch = unescaped.match(/\{[^{}]*"userStatus"\s*:\s*\{.*$/s)
-                if (jsonMatch) {
-                    const parsed = JSON.parse(jsonMatch[0])
-                    if (parsed?.userStatus) {
-                        this.bot.logger.debug(
-                            this.bot.isMobile,
-                            'GET-DASHBOARD-DATA',
-                            'Extracted dashboard data from Next.js hydration chunk'
-                        )
-                        return parsed as DashboardData
-                    }
-                }
-            } catch {
-                // This chunk did not contain valid dashboard JSON.
-            }
+        const next = extractNextDashboardData(html)
+        if (next) {
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                'GET-DASHBOARD-DATA',
+                'Extracted dashboard data from Next.js hydration chunk'
+            )
+            return next
         }
 
-        throw new Error('Dashboard data not found in HTML (tried legacy embed + Next.js chunks)')
+        const classification = classifyRewardsPage(html)
+        if (classification.kind === 'welcome') throw new RewardsWelcomeError()
+
+        throw new Error(`Dashboard data not found in HTML (classification: ${classification.kind} - ${classification.reason})`)
     }
 
     /**
