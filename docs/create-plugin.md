@@ -63,5 +63,5 @@ You can also run `npm run plugins` and enable or disable it from the local Plugi
 
 - Keep the plugin folder name and `name` field identical.
 - Document every config key in your README.
-- Use the public import path `microsoft-rewards-bot/plugin-api` for TypeScript plugins.
+- Use the public import path `Orbit/plugin-api` for TypeScript plugins.
 - Do not rely on internal Core plugin APIs; they are reserved for the official paid plugin.

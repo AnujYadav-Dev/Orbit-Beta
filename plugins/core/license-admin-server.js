@@ -13,7 +13,7 @@ const CONFIG_PATH = path.join(ROOT, 'license-admin.config.local.js')
 function loadLocalConfig() {
     const defaults = {
         organizationSlug: 'lightzirconite',
-        databaseName: 'microsoft-rewards-bot',
+        databaseName: 'Orbit',
         platformToken: process.env.TURSO_PLATFORM_TOKEN || '',
         databaseUrl: process.env.TURSO_DATABASE_URL || '',
         databaseToken: process.env.TURSO_DATABASE_TOKEN || ''

@@ -1,10 +1,12 @@
-# 🚀 Microsoft Rewards Bot (Cloud Edition)
+# 🚀 Orbit (Cloud Edition)
 
 An automated Microsoft Rewards farming bot, fully modernized to run 24/7 in the cloud. Earn points across multiple accounts completely hands-free using GitHub Actions and Neon Postgres.
 
-![Architecture Diagram](https://raw.githubusercontent.com/QuestPilot/Microsoft-Rewards-Bot/release/assets/banner.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AnujYadav-Dev/Orbit-Beta/release/assets/logo.png" alt="Logo" />
+</p>
 
-> This is a fork of the [QuestPilot Microsoft Rewards Bot](https://github.com/QuestPilot/Microsoft-Rewards-Bot). It has been heavily modified to strip out Docker, Nix, and proprietary auto-updaters, in favor of a robust, standard cloud-native stack.
+> This is a fork of the [QuestPilot Orbit](https://github.com/QuestPilot/Microsoft-Rewards-Bot). It has been heavily modified to strip out Docker, Nix, and proprietary auto-updaters, in favor of a robust, standard cloud-native stack.
 
 ---
 
@@ -59,10 +61,10 @@ To view your logs and stats, deploy the standalone dashboard:
 ## 🚀 Running the Bot
 
 ### Cloud Mode (GitHub Actions)
-The bot is pre-configured to run automatically every day at 07:00 UTC. 
+The bot is pre-configured to run automatically every day at 12:15 PM UTC. 
 To run it manually:
 1. Go to the **Actions** tab in your GitHub repository.
-2. Select **"Microsoft Rewards Bot — Scheduled Run"**.
+2. Select **"Orbit — Scheduled Run"**.
 3. Click **"Run workflow"**.
 
 ### Local Mode (Development)

@@ -1,6 +1,6 @@
 /**
- * Microsoft Rewards Bot — Core Selectors
- * Copyright (c) 2026 QuestPilot
+ * Orbit — Core Selectors
+ * Copyright (c) 2026 AnujYadav-Dev
  *
  * Licensed under the PolyForm Non-Commercial License 1.0.
  * See LICENSE for full terms.

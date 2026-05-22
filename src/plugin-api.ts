@@ -1,8 +1,8 @@
 /**
- * Public plugin API for Microsoft Rewards Bot.
+ * Public plugin API for Orbit.
  *
  * This file is the stable contract third-party plugin authors should import:
- * `microsoft-rewards-bot/plugin-api`.
+ * `Orbit/plugin-api`.
  */
 
 export const PLUGIN_API_VERSION = '1.0.0'

@@ -1,6 +1,6 @@
 # Documentation
 
-Public documentation for the Microsoft Rewards Bot.
+Public documentation for the Orbit.
 
 ## Start Here
 

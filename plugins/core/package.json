@@ -1,7 +1,7 @@
 {
-  "name": "microsoft-rewards-bot-core",
+  "name": "Orbit-core",
   "version": "1.0.3",
-  "description": "Official Core plugin for Microsoft Rewards Bot",
+  "description": "Official Core plugin for Orbit",
   "author": "LightZirconite",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,

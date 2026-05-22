@@ -1,9 +1,9 @@
-name: Microsoft Rewards Bot — Scheduled Run
+name: Orbit — Scheduled Run
 
 on:
   schedule:
-    # Runs daily at 07:00 UTC. Adjust to your preferred time.
-    - cron: '0 7 * * *'
+    # Runs daily at 12:15 PM UTC. Adjust to your preferred time.
+    - cron: '15 12 * * *'
   workflow_dispatch:
     # Allows manual trigger from the GitHub Actions tab
 

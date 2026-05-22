@@ -1,6 +1,6 @@
 # Official Core Plugin
 
-Core is the optional premium plugin for Microsoft Rewards Bot.
+Core is the optional premium plugin for Orbit.
 
 The open-source edition already handles the essential workflow. Core adds the maintained premium layer for users who want broader Rewards coverage, more automation, and access to the official web dashboard.
 

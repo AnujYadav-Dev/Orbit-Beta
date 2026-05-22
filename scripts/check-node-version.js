@@ -6,7 +6,7 @@ function normalizeVersion(version) {
 
 function fail(message) {
     console.error('')
-    console.error('Microsoft Rewards Bot cannot start.')
+    console.error('Orbit cannot start.')
     console.error('')
     console.error(message)
     console.error('')

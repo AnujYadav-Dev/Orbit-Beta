@@ -343,7 +343,7 @@ const HTML = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Microsoft Rewards Bot Plugin Desk</title>
+  <title>Orbit Plugin Desk</title>
   <style>
     :root {
       color-scheme: light;

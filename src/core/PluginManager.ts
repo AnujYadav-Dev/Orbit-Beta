@@ -1,6 +1,6 @@
 /**
- * Microsoft Rewards Bot — Plugin Manager
- * Copyright (c) 2026 QuestPilot
+ * Orbit — Plugin Manager
+ * Copyright (c) 2026 AnujYadav-Dev
  *
  * Licensed under the PolyForm Non-Commercial License 1.0.
  * See LICENSE for full terms.

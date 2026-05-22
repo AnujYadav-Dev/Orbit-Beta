@@ -468,7 +468,7 @@
         <div class="mark">MS</div>
         <div>
           <h1>Core License Desk</h1>
-          <div class="subtitle">Local Turso control room for Microsoft Rewards Bot Core.</div>
+          <div class="subtitle">Local Turso control room for Orbit Core.</div>
         </div>
       </div>
       <div class="connection">
@@ -530,7 +530,7 @@
               </div>
               <div>
                 <label for="dbName">Database name</label>
-                <input id="dbName" placeholder="microsoft-rewards-bot">
+                <input id="dbName" placeholder="Orbit">
               </div>
               <div>
                 <label for="platformToken">Turso platform token</label>
@@ -751,7 +751,7 @@
       const saved = JSON.parse(localStorage.getItem(storageKey) || '{}')
       settings = {
         organizationSlug: 'lightzirconite',
-        databaseName: 'microsoft-rewards-bot',
+        databaseName: 'Orbit',
         platformToken: '',
         databaseUrl: '',
         databaseToken: '',
@@ -778,7 +778,7 @@
 
     function clearSettings() {
       localStorage.removeItem(storageKey)
-      settings = { organizationSlug: 'lightzirconite', databaseName: 'microsoft-rewards-bot' }
+      settings = { organizationSlug: 'lightzirconite', databaseName: 'Orbit' }
       dbTokenCache = ''
       dbUrlCache = ''
       applySettingsToForm()

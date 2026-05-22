@@ -2,7 +2,7 @@
  * Internal plugin API for the official Core plugin.
  *
  * Do not document this file as the public plugin contract. Third-party plugins
- * should import from `microsoft-rewards-bot/plugin-api`.
+ * should import from `Orbit/plugin-api`.
  */
 
 import type { Page } from 'patchright'

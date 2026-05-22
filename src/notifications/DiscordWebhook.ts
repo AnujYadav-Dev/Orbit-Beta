@@ -3,8 +3,8 @@ import PQueue from 'p-queue'
 import type { LogLevel } from './LogService'
 
 const DISCORD_LIMIT = 2000
-const BOT_AVATAR_URL = 'https://raw.githubusercontent.com/QuestPilot/Microsoft-Rewards-Bot/release/assets/logo.png'
-const BOT_USERNAME = 'Microsoft Rewards Bot'
+const BOT_AVATAR_URL = 'https://raw.githubusercontent.com/AnujYadav-Dev/Orbit-Beta/main/assets/logo.png'
+const BOT_USERNAME = 'Orbit'
 
 export interface DiscordConfig {
     enabled?: boolean

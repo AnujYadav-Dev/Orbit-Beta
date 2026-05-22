@@ -58,7 +58,7 @@
             "url": "",
             "topic": "",
             "token": "",
-            "title": "Microsoft-Rewards-Bot",
+            "title": "Orbit",
             "tags": ["bot", "notify"],
             "priority": 3
         },
@@ -88,7 +88,7 @@
     },
     "safetyAdvisory": {
         "enabled": true,
-        "url": "https://raw.githubusercontent.com/QuestPilot/Microsoft-Rewards-Bot/release/safety-advisory.json",
+        "url": "https://raw.githubusercontent.com/AnujYadav-Dev/Orbit-Beta/main/safety-advisory.json",
         "timeout": "10sec",
         "blockedBehavior": "prompt"
     }

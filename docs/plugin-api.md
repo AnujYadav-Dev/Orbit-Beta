@@ -3,7 +3,7 @@
 This page documents the public third-party plugin contract. Import it from:
 
 ```ts
-import type { IPlugin, PublicPluginContext } from 'microsoft-rewards-bot/plugin-api'
+import type { IPlugin, PublicPluginContext } from 'Orbit/plugin-api'
 ```
 
 The official Core plugin uses an internal API that is not part of this public contract.
@@ -97,7 +97,7 @@ export interface AccountResult {
 ## Example
 
 ```ts
-import type { IPlugin } from 'microsoft-rewards-bot/plugin-api'
+import type { IPlugin } from 'Orbit/plugin-api'
 
 export default class SummaryPlugin implements IPlugin {
     readonly name = 'summary'

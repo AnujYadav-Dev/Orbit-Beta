@@ -49,7 +49,7 @@ async function fetchSafetyAdvisory(config: ConfigSafetyAdvisory, timeoutMs: numb
 
     try {
         const response = await fetch(config.url, {
-            headers: { 'user-agent': 'Microsoft-Rewards-Bot-SafetyCheck/1.0' },
+            headers: { 'user-agent': 'Orbit-SafetyCheck/1.0' },
             signal: controller.signal
         })
 
