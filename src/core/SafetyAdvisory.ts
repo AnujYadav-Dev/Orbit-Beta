@@ -37,7 +37,7 @@ export async function checkSafetyAdvisory(bot: MicrosoftRewardsBot): Promise<boo
         bot.logger.warn(
             'main',
             'SAFETY-ADVISORY',
-            `Could not check advisory status at ${config.url}: ${error instanceof Error ? error.message : String(error)}`
+            `Could not check advisory status: ${error instanceof Error ? error.message : String(error)}`
         )
         return true
     }

@@ -1,7 +1,6 @@
 import type { Page } from 'patchright'
 import { saveSessionData } from '../../helpers/ConfigLoader'
 import type { MicrosoftRewardsBot } from '../../index'
-import { classifyRewardsPage, isDashboardPayload, RewardsWelcomeError } from '../PageController'
 
 import { CodeStrategy } from './strategies/CodeStrategy'
 import { EmailStrategy } from './strategies/EmailStrategy'
@@ -776,22 +775,11 @@ export class AuthManager {
 
         await page.goto(this.bot.config.baseURL, { waitUntil: 'networkidle', timeout: 10000 }).catch(() => {})
 
-        let classification = await this.classifyCurrentRewardsPage(page)
-        if (classification.kind === 'welcome') {
-            await this.recoverFromRewardsWelcome(page)
-            classification = await this.classifyCurrentRewardsPage(page)
-        }
-
-        if (classification.kind === 'dashboard') {
+        const loginRewardsSuccess = new URL(page.url()).hostname === 'rewards.bing.com'
+        if (loginRewardsSuccess) {
             this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Logged into Microsoft Rewards successfully')
-        } else if (classification.kind === 'welcome') {
-            throw new RewardsWelcomeError()
         } else {
-            this.bot.logger.warn(
-                this.bot.isMobile,
-                'LOGIN',
-                `Could not verify Rewards Dashboard (${classification.kind}: ${classification.reason}), continuing best-effort`
-            )
+            this.bot.logger.warn(this.bot.isMobile, 'LOGIN', 'Could not verify Rewards Dashboard, assuming login valid')
         }
 
         this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'Starting Bing session verification')
@@ -881,25 +869,14 @@ export class AuthManager {
 
                 this.bot.logger.debug(this.bot.isMobile, 'GET-REWARD-SESSION', `Token fetch loop ${i + 1}/${loopMax}`)
 
-                let html = await page.content()
-                let classification = classifyRewardsPage(html, page.url(), await page.title().catch(() => ''))
-
-                if (classification.kind === 'welcome') {
-                    await this.recoverFromRewardsWelcome(page)
-                    html = await page.content()
-                    classification = classifyRewardsPage(html, page.url(), await page.title().catch(() => ''))
-                }
-
-                if (classification.kind === 'welcome') {
-                    throw new RewardsWelcomeError()
-                }
-
                 const u = new URL(page.url())
                 const atRewardHome =
                     u.hostname === 'rewards.bing.com' && (u.pathname === '/' || u.pathname === '/dashboard')
 
-                if (classification.kind === 'dashboard' || atRewardHome) {
+                if (atRewardHome) {
                     await this.bot.browser.utils.tryDismissAllMessages(page)
+
+                    const html = await page.content()
 
                     // ── New Next.js dashboard detection ───────────────────────
                     // The new dashboard (Next.js + React Server Components) does NOT
@@ -907,7 +884,7 @@ export class AuthManager {
                     // to avoid wasting 5 retry loops searching for a token that
                     // will never exist.  Activities will use the Server Action
                     // fallback in reportActivityViaBrowser() instead.
-                    if (isDashboardPayload(html) || html.includes('webpackChunk_N_E')) {
+                    if (html.includes('self.__next_f') || html.includes('webpackChunk_N_E')) {
                         this.bot.logger.info(
                             this.bot.isMobile,
                             'GET-REWARD-SESSION',
@@ -953,7 +930,7 @@ export class AuthManager {
                     this.bot.logger.debug(
                         this.bot.isMobile,
                         'GET-REWARD-SESSION',
-                        `Not at reward dashboard: ${classification.kind} (${classification.reason})`
+                        `Not at reward home: ${u.hostname}${u.pathname}`
                     )
                 }
 
@@ -972,71 +949,6 @@ export class AuthManager {
                 `Fatal error: ${error instanceof Error ? error.message : String(error)}`
             )
         }
-    }
-
-    private async classifyCurrentRewardsPage(page: Page) {
-        const [html, title] = await Promise.all([page.content(), page.title().catch(() => '')])
-        return classifyRewardsPage(html, page.url(), title)
-    }
-
-    private async recoverFromRewardsWelcome(page: Page): Promise<void> {
-        this.bot.logger.warn(
-            this.bot.isMobile,
-            'REWARDS-WELCOME',
-            'Rewards welcome/onboarding page detected, attempting dashboard recovery'
-        )
-
-        await this.bot.browser.utils.tryDismissAllMessages(page).catch(() => {})
-
-        const clicked = await page
-            .evaluate(() => {
-                const labels = [/visit dashboard/i, /^dashboard$/i, /start earning/i]
-                const candidates = Array.from(document.querySelectorAll('a[href], button')) as HTMLElement[]
-
-                for (const el of candidates) {
-                    const text = (el.innerText || el.textContent || '').trim()
-                    const href = el instanceof HTMLAnchorElement ? el.href : ''
-                    const matchesText = labels.some(label => label.test(text))
-                    const matchesHref = /rewards\.bing\.com\/dashboard|\/dashboard/i.test(href)
-
-                    if (!matchesText && !matchesHref) continue
-
-                    const rect = el.getBoundingClientRect()
-                    const style = window.getComputedStyle(el)
-                    if (rect.width <= 0 || rect.height <= 0 || style.display === 'none' || style.visibility === 'hidden') {
-                        continue
-                    }
-
-                    el.click()
-                    return true
-                }
-
-                return false
-            })
-            .catch(() => false)
-
-        if (clicked) {
-            await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => {})
-            await this.bot.utils.wait(2000)
-        }
-
-        let classification = await this.classifyCurrentRewardsPage(page)
-        if (classification.kind !== 'dashboard') {
-            await page.goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 15_000 }).catch(() => {})
-            await this.bot.utils.wait(2000)
-            classification = await this.classifyCurrentRewardsPage(page)
-        }
-
-        if (classification.kind === 'dashboard') {
-            this.bot.logger.info(this.bot.isMobile, 'REWARDS-WELCOME', 'Recovered from Rewards welcome page')
-            return
-        }
-
-        this.bot.logger.warn(
-            this.bot.isMobile,
-            'REWARDS-WELCOME',
-            `Dashboard recovery incomplete (${classification.kind}: ${classification.reason})`
-        )
     }
 
     async getAppAccessToken(page: Page, account: Account) {
