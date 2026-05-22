@@ -1,0 +1,17 @@
+{
+  "name": "rewards-dashboard",
+  "version": "1.0.0",
+  "description": "Premium dashboard for Microsoft Rewards Bot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "pg": "^8.13.0",
+    "cookie-parser": "^1.4.6"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
