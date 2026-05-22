@@ -32,3 +32,11 @@ test('dashboard fetch has browser API and Next.js RSC fallbacks', () => {
     assert.match(controller, /extractRewardsActivities/)
     assert.match(controller, /Built dashboard data from Next\.js Rewards page payload/)
 })
+
+test('dashboard fallback chatter is debug-only and closed pages return cached points', () => {
+    const controller = read('src/automation/PageController.ts')
+
+    assert.doesNotMatch(controller, /logger\.warn\(this\.bot\.isMobile, 'GET-DASHBOARD-DATA', 'API failed/)
+    assert.match(controller, /Primary API failed, trying HTML fallback/)
+    assert.match(controller, /Browser page is closed, returning last known points/)
+})

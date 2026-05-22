@@ -57,7 +57,7 @@ export default class PageController {
             }
             throw new Error('Dashboard data missing from API response')
         } catch (error) {
-            this.bot.logger.warn(this.bot.isMobile, 'GET-DASHBOARD-DATA', 'API failed, trying HTML fallback')
+            this.bot.logger.debug(this.bot.isMobile, 'GET-DASHBOARD-DATA', 'Primary API failed, trying HTML fallback')
 
             try {
                 const request: AxiosRequestConfig = {
@@ -76,7 +76,7 @@ export default class PageController {
                 const response = await this.bot.axios.request(request)
                 return this.parseDashboardHtml(String(response.data))
             } catch {
-                this.bot.logger.warn(
+                this.bot.logger.debug(
                     this.bot.isMobile,
                     'GET-DASHBOARD-DATA',
                     'HTML fallback failed, trying browser session fallback'
@@ -85,6 +85,10 @@ export default class PageController {
 
             try {
                 const page = this.bot.isMobile ? this.bot.mainMobilePage : this.bot.mainDesktopPage
+                if (!page || page.isClosed()) {
+                    throw new Error('Browser page is not available for dashboard fallback')
+                }
+
                 await page
                     .goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 30_000 })
                     .catch(() => {})
@@ -626,6 +630,16 @@ export default class PageController {
      */
     async getCurrentPoints(): Promise<number> {
         try {
+            const page = this.bot.isMobile ? this.bot.mainMobilePage : this.bot.mainDesktopPage
+            if (!page || page.isClosed()) {
+                this.bot.logger.debug(
+                    this.bot.isMobile,
+                    'GET-CURRENT-POINTS',
+                    `Browser page is closed, returning last known points: ${this.bot.userData.currentPoints}`
+                )
+                return this.bot.userData.currentPoints
+            }
+
             this.bot.logger.debug(this.bot.isMobile, 'GET-CURRENT-POINTS', 'Fetching current points...')
             const data = await this.getDashboardData()
             const points = data.userStatus.availablePoints
