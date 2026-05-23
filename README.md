@@ -6,7 +6,7 @@ An automated Microsoft Rewards farming bot, fully modernized to run 24/7 in the 
   <img src="https://github.com/AnujYadav-Dev/Orbit-Beta/blob/main/assets/logo.png" alt="Logo" />
 </p>
 
-> This is a fork of the [QuestPilot Orbit](https://github.com/QuestPilot/Microsoft-Rewards-Bot). It has been heavily modified to strip out Docker, Nix, and proprietary auto-updaters, in favor of a robust, standard cloud-native stack.
+> This is a fork of the [QuestPilot Microsoft-Rewards-Bot](https://github.com/QuestPilot/Microsoft-Rewards-Bot). It has been heavily modified to strip out Docker, Nix, and proprietary auto-updaters, in favor of a robust, standard cloud-native stack.
 
 ---
 

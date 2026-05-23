@@ -7,6 +7,7 @@ src/accounts.json
 src/config.json
 /.vscode
 /diagnostics
+bot-diagnostics/
 note
 accounts.dev.json
 accounts.main.json
