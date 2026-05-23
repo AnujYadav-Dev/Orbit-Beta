@@ -101,3 +101,15 @@ npm start
 ## 📄 License
 
 This project retains the upstream PolyForm Noncommercial License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+#### ⚠️ Disclaimer
+
+<sub>**Legal Notice:** This project is independent and is not affiliated with, authorized, maintained, sponsored, or endorsed by Microsoft Corporation or any of its affiliates or subsidiaries.</sub>
+
+<sub>**Risk Warning:** The use of automated scripts, bots, or tools to interact with Microsoft Rewards may violate Microsoft's Services Agreement and Terms of Service. Utilizing this software could result in account suspension, restriction, or permanent banning. **Use entirely at your own risk.**</sub>
+
+</div>
