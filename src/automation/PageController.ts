@@ -32,6 +32,8 @@ export default class PageController {
      * @returns {DashboardData} Object of user bing rewards dashboard data
      */
     async getDashboardData(): Promise<DashboardData> {
+        const cookies = this.getCurrentPlatformCookies()
+
         try {
             const request: AxiosRequestConfig = {
                 url: URLS.dashboardApi,
@@ -40,11 +42,7 @@ export default class PageController {
                 'axios-retry': { retries: 2 },
                 headers: {
                     ...(this.bot.fingerprint?.headers ?? {}),
-                    Cookie: this.buildCookieHeader(this.bot.cookies.mobile, [
-                        'bing.com',
-                        'live.com',
-                        'microsoftonline.com'
-                    ]),
+                    Cookie: this.buildCookieHeader(cookies, ['bing.com', 'live.com', 'microsoftonline.com']),
                     Referer: 'https://rewards.bing.com/',
                     Origin: 'https://rewards.bing.com'
                 }
@@ -67,7 +65,7 @@ export default class PageController {
                     'axios-retry': { retries: 2 },
                     headers: {
                         ...(this.bot.fingerprint?.headers ?? {}),
-                        Cookie: this.buildCookieHeader(this.bot.cookies.mobile),
+                        Cookie: this.buildCookieHeader(cookies),
                         Referer: 'https://rewards.bing.com/',
                         Origin: 'https://rewards.bing.com'
                     }
@@ -89,18 +87,44 @@ export default class PageController {
                     throw new Error('Browser page is not available for dashboard fallback')
                 }
 
-                await page
-                    .goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 30_000 })
-                    .catch(() => {})
-                const browserApiData = await this.getDashboardDataViaBrowserApi(page)
-                if (browserApiData) return browserApiData
+                const fallbackPage = this.isRewardsDashboardPage(page) ? page : await page.context().newPage()
+                const closeFallbackPage = fallbackPage !== page
 
-                const html = await page.content()
-                return this.parseDashboardHtml(html)
+                try {
+                    await fallbackPage
+                        .goto(this.bot.config.baseURL, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+                        .catch(() => {})
+                    const browserApiData = await this.getDashboardDataViaBrowserApi(fallbackPage)
+                    if (browserApiData) return browserApiData
+
+                    const html = await fallbackPage.content()
+                    return this.parseDashboardHtml(html)
+                } finally {
+                    if (closeFallbackPage) {
+                        await fallbackPage.close().catch(() => {})
+                    }
+                }
             } catch (fallbackError) {
                 this.bot.logger.error(this.bot.isMobile, 'GET-DASHBOARD-DATA', 'Failed to get dashboard data')
                 throw fallbackError
             }
+        }
+    }
+
+    private getCurrentPlatformCookies(): Cookie[] {
+        if (!this.bot.isMobile && this.bot.cookies.desktop.length > 0) {
+            return this.bot.cookies.desktop
+        }
+
+        return this.bot.cookies.mobile
+    }
+
+    private isRewardsDashboardPage(page: Page): boolean {
+        try {
+            const url = new URL(page.url())
+            return url.hostname === 'rewards.bing.com' && url.pathname.includes('/dashboard')
+        } catch {
+            return false
         }
     }
 

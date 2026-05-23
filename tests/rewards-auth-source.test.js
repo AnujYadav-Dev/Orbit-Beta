@@ -40,3 +40,14 @@ test('dashboard fallback chatter is debug-only and closed pages return cached po
     assert.match(controller, /Primary API failed, trying HTML fallback/)
     assert.match(controller, /Browser page is closed, returning last known points/)
 })
+
+test('dashboard browser fallback does not navigate an active non-dashboard page', () => {
+    const controller = read('src/automation/PageController.ts')
+
+    assert.match(controller, /getCurrentPlatformCookies/)
+    assert.match(controller, /!this\.bot\.isMobile && this\.bot\.cookies\.desktop\.length > 0/)
+    assert.match(controller, /const fallbackPage = this\.isRewardsDashboardPage\(page\) \? page : await page\.context\(\)\.newPage\(\)/)
+    assert.match(controller, /const closeFallbackPage = fallbackPage !== page/)
+    assert.match(controller, /await fallbackPage\.close\(\)\.catch\(\(\) => \{\}\)/)
+    assert.doesNotMatch(controller, /await page\s*\.\s*goto\(this\.bot\.config\.baseURL/)
+})
