@@ -9,20 +9,23 @@ function read(file) {
     return fs.readFileSync(path.join(root, file), 'utf8')
 }
 
-test('search task recovers when the active page is no longer Bing', () => {
+test('search task submits every daily search through a direct Bing URL', () => {
     const search = read('src/core/tasks/browser/Search.ts')
 
-    assert.match(search, /ensureBingSearchPage/)
-    assert.match(search, /Active page is not Bing, recovering with direct search URL/)
-    assert.match(search, /Bing search box not visible, recovering with direct search URL/)
+    assert.match(search, /submitSearchQuery/)
+    assert.match(search, /Submitting query with direct search URL for daily search attribution/)
+    assert.match(search, /Active page is not Bing, submitting query with direct search URL/)
+    assert.match(search, /Bing search box not visible, submitting query with direct search URL/)
     assert.match(search, /navigateToSearchUrl\(searchPage, query, isMobile\)/)
     assert.match(search, /Submitted query via direct Bing URL/)
+    assert.doesNotMatch(search, /keyboard\.type\(char/)
+    assert.doesNotMatch(search, /Submitted query to Bing/)
 })
 
-test('search task uses shorter selector waits before recovery can retry', () => {
+test('search task uses shorter selector waits after direct navigation', () => {
     const search = read('src/core/tasks/browser/Search.ts')
 
-    assert.match(search, /searchBox\.waitFor\(\{ state: 'visible', timeout: submittedByDirectNavigation \? 8000 : 5000 \}\)/)
+    assert.match(search, /searchBox\.waitFor\(\{ state: 'visible', timeout: 8000 \}\)/)
     assert.doesNotMatch(search, /searchBox\.waitFor\(\{ state: 'visible', timeout: 15000 \}\)/)
 })
 

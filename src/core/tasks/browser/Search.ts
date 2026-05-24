@@ -293,39 +293,20 @@ export class Search extends TaskBase {
             try {
                 const searchBar = BING_SEARCH.searchBar
                 const searchBox = searchPage.locator(searchBar)
-                const submittedByDirectNavigation = await this.ensureBingSearchPage(searchPage, query, isMobile)
+                await this.submitSearchQuery(searchPage, query, isMobile)
 
                 // Use string form so the obfuscator cannot inject outer-scope
                 // string-array references inside the evaluate callback body.
                 await searchPage.evaluate('window.scrollTo(0, 0)')
 
                 await searchPage.keyboard.press('Home')
-                await searchBox.waitFor({ state: 'visible', timeout: submittedByDirectNavigation ? 8000 : 5000 })
+                await searchBox.waitFor({ state: 'visible', timeout: 8000 })
 
-                if (submittedByDirectNavigation) {
-                    this.bot.logger.debug(
-                        isMobile,
-                        'SEARCH-BING',
-                        `Submitted query via direct Bing URL | attempt=${i + 1}/${maxAttempts} | query="${query}"`
-                    )
-                } else {
-                    await this.bot.utils.wait(1000)
-                    await this.bot.browser.utils.ghostClick(searchPage, searchBar, { clickCount: 3 })
-                    await searchBox.fill('')
-
-                    // Human-like typing with randomized per-keystroke delay
-                    for (const char of query) {
-                        await searchPage.keyboard.type(char, { delay: this.bot.utils.humanTypeDelay() })
-                    }
-                    await this.bot.utils.wait(this.bot.utils.randomNumber(200, 600))
-                    await searchPage.keyboard.press('Enter')
-
-                    this.bot.logger.debug(
-                        isMobile,
-                        'SEARCH-BING',
-                        `Submitted query to Bing | attempt=${i + 1}/${maxAttempts} | query="${query}"`
-                    )
-                }
+                this.bot.logger.debug(
+                    isMobile,
+                    'SEARCH-BING',
+                    `Submitted query via direct Bing URL | attempt=${i + 1}/${maxAttempts} | query="${query}"`
+                )
 
                 await this.bot.utils.wait(3000)
 
@@ -393,30 +374,29 @@ export class Search extends TaskBase {
         return await this.bot.browser.func.getSearchPoints()
     }
 
-    private async ensureBingSearchPage(searchPage: Page, query: string, isMobile: boolean): Promise<boolean> {
+    private async submitSearchQuery(searchPage: Page, query: string, isMobile: boolean): Promise<void> {
         const currentUrl = searchPage.url()
         if (!this.isBingPage(currentUrl)) {
             this.bot.logger.warn(
                 isMobile,
                 'SEARCH-BING',
-                `Active page is not Bing, recovering with direct search URL | url=${currentUrl}`
+                `Active page is not Bing, submitting query with direct search URL | url=${currentUrl}`
             )
-            await this.navigateToSearchUrl(searchPage, query, isMobile)
-            return true
-        }
-
-        const searchBoxVisible = await searchPage.locator(BING_SEARCH.searchBar).isVisible().catch(() => false)
-        if (!searchBoxVisible) {
+        } else if (!(await searchPage.locator(BING_SEARCH.searchBar).isVisible().catch(() => false))) {
             this.bot.logger.warn(
                 isMobile,
                 'SEARCH-BING',
-                `Bing search box not visible, recovering with direct search URL | url=${currentUrl}`
+                `Bing search box not visible, submitting query with direct search URL | url=${currentUrl}`
             )
-            await this.navigateToSearchUrl(searchPage, query, isMobile)
-            return true
+        } else {
+            this.bot.logger.debug(
+                isMobile,
+                'SEARCH-BING',
+                `Submitting query with direct search URL for daily search attribution | url=${currentUrl}`
+            )
         }
 
-        return false
+        await this.navigateToSearchUrl(searchPage, query, isMobile)
     }
 
     private async navigateToSearchUrl(searchPage: Page, query: string, isMobile: boolean): Promise<void> {
