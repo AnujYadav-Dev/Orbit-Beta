@@ -88,9 +88,8 @@ export function loadConfig(): Config {
             const configData = JSON.parse(process.env.CONFIG_JSON)
             validateConfig(configData)
 
-            // Force headless mode and single cluster in cloud/CI environments
+            // Force headless mode in cloud/CI environments, but honor the configured cluster count.
             configData.headless = true
-            configData.clusters = 1
 
             configCache = configData
             return configData

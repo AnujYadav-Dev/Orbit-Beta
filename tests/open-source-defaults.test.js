@@ -16,3 +16,11 @@ test('public example config starts with Core-only workers disabled', () => {
     assert.equal(config.workers.doDashboardInfo, false)
     assert.equal(config.workers.doClaimPoints, false)
 })
+
+test('cloud config honors configured cluster count', () => {
+    const loader = fs.readFileSync(path.join(root, 'src/helpers/ConfigLoader.ts'), 'utf8')
+
+    assert.match(loader, /Force headless mode in cloud\/CI environments, but honor the configured cluster count/)
+    assert.match(loader, /configData\.headless = true/)
+    assert.doesNotMatch(loader, /configData\.clusters = 1/)
+})
