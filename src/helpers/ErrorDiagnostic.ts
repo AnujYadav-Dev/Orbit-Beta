@@ -2,10 +2,10 @@ import fs from 'fs/promises'
 import path from 'path'
 import type { Page } from 'patchright'
 
-export async function errorDiagnostic(page: Page, error: Error): Promise<void> {
+export async function errorDiagnostic(page: Page, error: Error, level: 'error' | 'warn' = 'error'): Promise<void> {
     try {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-        const folderName = `error-${timestamp}`
+        const folderName = `${level}-${timestamp}`
         const outputDir = path.join(process.cwd(), 'diagnostics', folderName)
 
         if (!page) {
@@ -16,13 +16,14 @@ export async function errorDiagnostic(page: Page, error: Error): Promise<void> {
             return
         }
 
-        // Error log content
+        const label = level === 'warn' ? 'Warning' : 'Error'
         const errorLog = `
+Level: ${level.toUpperCase()}
 Name: ${error.name}
 Message: ${error.message}
 Timestamp: ${new Date().toISOString()}
 ---------------------------------------------------
-Stack Trace:
+${label} Stack Trace:
 ${error.stack || 'No stack trace available'}
         `.trim()
 
