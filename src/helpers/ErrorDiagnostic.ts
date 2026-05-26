@@ -2,6 +2,10 @@ import fs from 'fs/promises'
 import path from 'path'
 import type { Page } from 'patchright'
 
+function formatDiagnosticFailure(error: unknown): string {
+    return error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}`.trim() : String(error)
+}
+
 export async function errorDiagnostic(page: Page, error: Error, level: 'error' | 'warn' = 'error'): Promise<void> {
     try {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -27,18 +31,28 @@ ${label} Stack Trace:
 ${error.stack || 'No stack trace available'}
         `.trim()
 
-        const [htmlContent, screenshotBuffer] = await Promise.all([
+        await fs.mkdir(outputDir, { recursive: true })
+        await fs.writeFile(path.join(outputDir, 'error.txt'), errorLog)
+
+        const [htmlResult, screenshotResult] = await Promise.allSettled([
             page.content(),
             page.screenshot({ fullPage: true, type: 'png' })
         ])
 
-        await fs.mkdir(outputDir, { recursive: true })
+        if (htmlResult.status === 'fulfilled') {
+            await fs.writeFile(path.join(outputDir, 'dump.html'), htmlResult.value)
+        } else {
+            await fs.writeFile(path.join(outputDir, 'dump-error.txt'), formatDiagnosticFailure(htmlResult.reason))
+        }
 
-        await Promise.all([
-            fs.writeFile(path.join(outputDir, 'dump.html'), htmlContent),
-            fs.writeFile(path.join(outputDir, 'screenshot.png'), screenshotBuffer),
-            fs.writeFile(path.join(outputDir, 'error.txt'), errorLog)
-        ])
+        if (screenshotResult.status === 'fulfilled') {
+            await fs.writeFile(path.join(outputDir, 'screenshot.png'), screenshotResult.value)
+        } else {
+            await fs.writeFile(
+                path.join(outputDir, 'screenshot-error.txt'),
+                formatDiagnosticFailure(screenshotResult.reason)
+            )
+        }
 
         console.log(`Diagnostics saved to: ${outputDir}`)
     } catch (error) {
