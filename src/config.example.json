@@ -35,11 +35,7 @@
         "readDelay": {
             "min": "30sec",
             "max": "1min"
-        },
-        "stagnantLoopMax": 10,
-        "extraStagnantLoopMax": 5,
-        "relatedQueryExpansionLimit": 50,
-        "pointRefreshInterval": 1
+        }
     },
     "debugLogs": false,
     "consoleLogFilter": {
